@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Patalix True Google Style Calculator</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: background-color 0.15s ease, color 0.15s ease;
+        }
+
+        /* DEFAULT WHITE BACKGROUND */
+        body {
+            background-color: #ffffff;
+            color: #000000;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        body.dark-mode {
+            background-color: #000000;
+            color: #ffffff;
+        }
+
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-name {
+            font-size: 14px;
+            letter-spacing: 1px;
+            color: #888888;
+            font-weight: 600;
+        }
+
+        .three-dots-btn {
+            font-size: 22px;
+            cursor: pointer;
+            color: #1a73e8;
+            padding: 0 5px;
+            font-weight: bold;
+        }
+
+        .history-btn {
+            font-size: 15px;
+            color: #1a73e8;
+            cursor: pointer;
+            font-weight: bold;
+            padding: 5px 10px;
+        }
+
+        .sub-header-bar {
+            display: flex;
+            justify-content: flex-end;
+            padding: 0 20px 10px 20px;
+        }
+
+        .inv-toggle-btn {
+            font-size: 14px;
+            color: #1a73e8;
+            cursor: pointer;
+            font-weight: bold;
+            background-color: #f1f3f4;
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid #dae0e2;
+        }
+        body.dark-mode .inv-toggle-btn {
+            background-color: #1c1c1e;
+            border: 1px solid #2c2c2e;
+        }
+
+        .display-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: flex-end;
+            padding: 20px;
+        }
+
+        .preview-line {
+            font-size: 20px;
+            color: #a0a0a5;
+            min-height: 26px;
+            text-align: right;
+            width: 100%;
+            margin-bottom: 5px;
+        }
+
+        .query-line {
+            font-size: 18px;
+            color: #888888;
+            margin-bottom: 8px;
+            min-height: 24px;
+            text-align: right;
+            width: 100%;
+        }
+
+        .main-display {
+            font-size: 44px;
+            font-weight: 400;
+            text-align: right;
+            width: 100%;
+            word-wrap: break-word;
+            overflow-y: hidden;
+            max-height: 100px;
+            transition: font-size 0.08s ease;
+            user-select: text;
+            -webkit-user-select: text;
+        }
+
+        .pad-container {
+            padding: 12px;
+            border-top: none;
+            position: relative;
+        }
+
+        .advanced-panel {
+            position: absolute;
+            bottom: 0; left: 0; width: 100%;
+            background-color: #172b4d;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            transform: translateY(100%);
+            transition: transform 0.25s cubic-bezier(0, 0, 0.2, 1);
+            z-index: 50;
+            border-top-left-radius: 16px; border-top-right-radius: 16px;
+        }
+
+        .advanced-panel.open { transform: translateY(0); }
+
+        .grid-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
+
+        /* MULTI-PLATFORM RESPONSIVE BUTTONS BLOCK */
+        .btn {
+            flex: 1; margin: 5px; height: 68px; border-radius: 50px; border: none; outline: none;
+            font-size: 24px; font-weight: 500; background-color: #f1f3f4; color: #000000;
+            display: flex; justify-content: center; align-items: center; transition: transform 0.05s ease;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        body.dark-mode .btn { background-color: #1c1c1e; color: #ffffff; }
+        .btn:active { transform: scale(0.9); background-color: #e8eaed; }
+        body.dark-mode .btn:active { background-color: #2c2c2e; }
+
+        .btn-action { background-color: #e8eaed; color: #3c4043; }
+        body.dark-mode .btn-action { background-color: #3a3a3c; color: #d1d1d6; }
+        .btn-operator { background-color: #e8f0fe; color: #1a73e8; }
+        body.dark-mode .btn-operator { background-color: #2f3b52; color: #8ab4f8; }
+        .btn-equal { background-color: #1a73e8; color: #ffffff; }
+        body.dark-mode .btn-equal { background-color: #8ab4f8; color: #000000; }
+        .btn-adv { background-color: #233d6b; color: #aecbfa; font-size: 18px; font-weight: bold; height: 60px; }
+
+        /* History Drawer */
+        .history-drawer {
+            position: fixed;
+            top: -100%; left: 0; width: 100%; height: 85%;
+            background-color: #f8f9fa; border-bottom-left-radius: 24px; border-bottom-right-radius: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15); transition: top 0.25s cubic-bezier(0, 0, 0.2, 1);
+            z-index: 999; display: flex; flex-direction: column; padding: 22px;
+        }
+        body.dark-mode .history-drawer { background-color: #121212; }
+        .history-drawer.open { top: 0; }
+        .drawer-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; border-bottom: 1px solid #dae0e2; margin-bottom: 15px; }
+        body.dark-mode .drawer-header { border-bottom: 1px solid #222222; }
+        .drawer-content { flex: 1; overflow-y: auto; overflow-x: hidden; }
+        .history-item { padding: 12px 15px; border-bottom: 1px solid #f1f3f4; text-align: right; }
+        body.dark-mode .history-item { border-bottom: 1px solid #1c1c1e; }
+        .history-q { color: #8a8a8f; font-size: 16px; }
+        .history-a { font-size: 22px; margin-top: 5px; }
+
+        /* Settings CSS Layout */
+        .settings-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center;
+            z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+        }
+        .settings-modal.open { opacity: 1; pointer-events: auto; }
+        .settings-box { background-color: #ffffff; color: #000000; width: 85%; max-width: 320px; border-radius: 16px; padding: 20px; box-shadow: 0 4px 25px rgba(0,0,0,0.25); transform: scale(0.9); transition: transform 0.2s ease; }
+        body.dark-mode .settings-box { background-color: #1e1e1e; color: #ffffff; }
+        .settings-modal.open .settings-box { transform: scale(1); }
+        .settings-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        body.dark-mode .settings-title { border-bottom: 1px solid #333; }
+        .setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .setting-label { font-size: 15px; font-weight: 500; }
+        .setting-control select, .setting-control input { padding: 6px 10px; border-radius: 8px; border: 1px solid #ccc; background-color: #fff; color: #000; outline: none; }
+        body.dark-mode .setting-control select, body.dark-mode .setting-control input { border: 1px solid #444; background-color: #2c2c2e; color: #fff; }
+        .setting-control input[type="number"] { width: 80px; text-align: center; }
+        .close-settings-btn { background-color: #1a73e8; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; float: right; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+    <div id="settingsModal" class="settings-modal">
+        <div class="settings-box">
+            <div class="settings-title">⚙️ Patalix Settings</div>
+            <div class="setting-row">
+                <div class="setting-label">Theme Mode</div>
+                <div class="setting-control">
+                    <select id="themeSelect" onchange="changeTheme()">
+                        <option value="light">Light Mode</option>
+                        <option value="dark">Dark Mode</option>
+                        <option value="system">System Default</option>
+                    </select>
+                </div>
+            </div>
+            <div class="setting-row">
+                <div class="setting-label">Haptic Vibration</div>
+                <div class="setting-control">
+                    <select id="vibrateSelect" onchange="toggleVibration()">
+                        <option value="off">OFF</option>
+                        <option value="on">ON</option>
+                    </select>
+                </div>
+            </div>
+            <div class="setting-row">
+                <div class="setting-label">History Limit</div>
+                <div class="setting-control">
+                    <input type="number" id="historyLimitInput" min="1" placeholder="Max" oninput="changeHistoryLimit()">
+                </div>
+            </div>
+            <div style="font-size: 11px; color: #888; margin-top: -10px; margin-bottom: 15px;">Leave empty for Unlimited rows.</div>
+            <button class="close-settings-btn" onclick="closeSettings()">OK</button>
+        </div>
+    </div>
+
+    <div id="historyDrawer" class="history-drawer">
+        <div class="drawer-header">
+            <span style="font-weight: bold; color: #8e8e93; font-size: 16px;">History</span>
+            <span id="clearHistory" style="color: #1a73e8; font-size: 15px; font-weight: bold; cursor: pointer;">Clear all</span>
+            <span style="font-size: 26px; color: #ff6b6b; cursor: pointer;" id="closeDrawer">✕</span>
+        </div>
+        <div class="drawer-content" id="historyItems"></div>
+    </div>
+
+    <div class="header-bar">
+        <div class="header-left">
+            <div class="brand-name">PATALIX CALCULATOR</div>
+            <div class="three-dots-btn" onclick="openSettings()">⁝</div>
+        </div>
+        <div class="history-btn" id="viewHistoryBtn">History</div>
+    </div>
+
+    <div class="sub-header-bar">
+        <div class="inv-toggle-btn" id="advToggleBtn" onclick="toggleAdvancedPanel()">INV ⌃</div>
+    </div>
+
+    <div class="display-container" id="swipeZone">
+        <div class="preview-line" id="previewDisplay"></div>
+        <div class="query-line" id="queryDisplay"></div>
+        <div class="main-display" id="calcDisplay">0</div>
+    </div>
+
+    <div class="pad-container">
+        <div class="advanced-panel" id="advancedPanel">
+            <div class="grid-row" style="justify-content: center; margin-bottom: 5px;">
+                <div style="width: 40px; height: 5px; background-color: #4b6584; border-radius: 10px; cursor: pointer;" onclick="toggleAdvancedPanel()"></div>
+            </div>
+            <div class="grid-row">
+                <button class="btn btn-adv" onclick="btnPress('sin(')">sin</button>
+                <button class="btn btn-adv" onclick="btnPress('cos(')">cos</button>
+                <button class="btn btn-adv" onclick="btnPress('tan(')">tan</button>
+                <button class="btn btn-adv" onclick="btnPress('log(')">log</button>
+            </div>
+            <div class="grid-row">
+                <button class="btn btn-adv" onclick="btnPress('ln(')">ln</button>
+                <button class="btn btn-adv" onclick="btnPress('3.14159')">π</button>
+                <button class="btn btn-adv" onclick="btnPress('2.71828')">e</button>
+                <button class="btn btn-adv" onclick="btnPress('^')">^</button>
+            </div>
+            <div class="grid-row">
+                <button class="btn btn-adv" onclick="btnPress('sqrt(')">√</button>
+                <button class="btn btn-adv" onclick="btnPress('(')">(</button>
+                <button class="btn btn-adv" onclick="btnPress(')')">)</button>
+                <button class="btn btn-adv" style="background-color: #ff6b6b; color: #000000;" onclick="toggleAdvancedPanel()">Close ⌄</button>
+            </div>
+        </div>
+
+        <div class="grid-row">
+            <button class="btn btn-action" onclick="btnPress('AC')">AC</button>
+            <button class="btn btn-action" onclick="btnPress('CE')">⌫</button>
+            <button class="btn btn-action" onclick="btnPress('%')">%</button>
+            <button class="btn btn-operator" onclick="btnPress('/')">÷</button>
+        </div>
+        <div class="grid-row">
+            <button class="btn" onclick="btnPress('7')">7</button>
+            <button class="btn" onclick="btnPress('8')">8</button>
+            <button class="btn" onclick="btnPress('9')">9</button>
+            <button class="btn btn-operator" onclick="btnPress('*')">×</button>
+        </div>
+        <div class="grid-row">
+            <button class="btn" onclick="btnPress('4')">4</button>
+            <button class="btn" onclick="btnPress('5')">5</button>
+            <button class="btn" onclick="btnPress('6')">6</button>
+            <button class="btn btn-operator" onclick="btnPress('-')">−</button>
+        </div>
+        <div class="grid-row">
+            <button class="btn" onclick="btnPress('1')">1</button>
+            <button class="btn" onclick="btnPress('2')">2</button>
+            <button class="btn" onclick="btnPress('3')">3</button>
+            <button class="btn btn-operator" onclick="btnPress('+')">+</button>
+        </div>
+        <div class="grid-row">
+            <button class="btn btn-action" onclick="btnPress('00')">00</button>
+            <button class="btn" onclick="btnPress('0')">0</button>
+            <button class="btn" onclick="btnPress('.')">.</button>
+            <button class="btn btn-equal" onclick="btnPress('=')">=</button>
+        </div>
+    </div>
+
+    <script>
+        let currentInput = "";
+        let isEvaluated = false;
+        let history = JSON.parse(localStorage.getItem('calc_history')) || [];
+
+        let isVibrationEnabled = localStorage.getItem('cfg_vibrate') === 'on'; 
+        let historyLimit = parseInt(localStorage.getItem('cfg_hist_limit')) || 0; 
+        let selectedTheme = localStorage.getItem('cfg_theme') || 'light'; 
+
+        const calcDisplay = document.getElementById('calcDisplay');
+        const queryDisplay = document.getElementById('queryDisplay');
+        const previewDisplay = document.getElementById('previewDisplay');
+        const advancedPanel = document.getElementById('advancedPanel');
+        const historyDrawer = document.getElementById('historyDrawer');
+        const advToggleBtn = document.getElementById('advToggleBtn');
+        const historyItemsContainer = document.getElementById('historyItems');
+        const settingsModal = document.getElementById('settingsModal');
+
+        function updateScreenDisplayContent() {
+            calcDisplay.innerText = currentInput || "0";
+            adjustFontSizeRoutine();
+        }
+
+        function btnPress(action) {
+            executeHapticVibration();
+
+            if (isEvaluated && action === 'CE') {
+                currentInput = ""; queryDisplay.innerText = ""; previewDisplay.innerText = ""; isEvaluated = false;
+                updateScreenDisplayContent(); return;
+            }
+
+            if (["Can't divide by zero", "Keep it real", "Result is undefined", "Infinity", "-Infinity", "Error"].includes(calcDisplay.innerText) && action === 'CE') {
+                currentInput = ""; queryDisplay.innerText = ""; previewDisplay.innerText = ""; isEvaluated = false;
+                updateScreenDisplayContent(); return;
+            }
+
+            if (action === 'AC') {
+                currentInput = ""; queryDisplay.innerText = ""; previewDisplay.innerText = ""; isEvaluated = false;
+                updateScreenDisplayContent(); return;
+            }
+            if (action === 'CE') {
+                if (isEvaluated) { queryDisplay.innerText = ""; previewDisplay.innerText = ""; return; }
+                if (currentInput === "0" || currentInput === "") return; 
+                currentInput = currentInput.slice(0, -1);
+                updateScreenDisplayContent(); RichmondLivePreview(); return;
+            }
+            if (action === '=') { calculate(); return; }
+
+            if (isEvaluated && (currentInput.includes('e+') || currentInput.includes('e-') || ["Can't divide by zero", "Keep it real", "Result is undefined", "Infinity", "-Infinity"].includes(calcDisplay.innerText))) {
+                currentInput = ""; queryDisplay.innerText = ""; previewDisplay.innerText = ""; isEvaluated = false;
+            }
+
+            if (isEvaluated) {
+                if (!isNaN(action) || action === '.' || action === '(' || action === '3.14159' || action === '2.71828') currentInput = "";
+                isEvaluated = false;
+            }
+
+            const lastChar = currentInput.slice(-1);
+
+            if (currentInput === "" || currentInput === "0") {
+                if (['+', '*', '/', '%', '^', ')'].includes(action)) return;
+                if (action === '-') { currentInput = "-"; updateScreenDisplayContent(); return; }
+                if (action === '00') { currentInput = "0"; updateScreenDisplayContent(); return; }
+            }
+
+            if (action === ')') {
+                let openCount = (currentInput.match(/\(/g) || []).length;
+                let closeCount = (currentInput.match(/\)/g) || []).length;
+                if (closeCount >= openCount) return;
+            }
+
+            if (action === ')' && lastChar === '(') return;
+
+            if (action === '(' && (!isNaN(lastChar) || lastChar === ')' || lastChar === '%' || ['9','8','3.14159','2.71828'].includes(lastChar))) {
+                currentInput += '*('; updateScreenDisplayContent(); return;
+            }
+            if (['3.14159', '2.71828'].includes(action) && (!isNaN(lastChar) && lastChar !== "" && currentInput !== "0" || lastChar === ')')) {
+                currentInput += '*' + action; updateScreenDisplayContent(); RichmondLivePreview(); return;
+            }
+
+            if (action === '.' && ['+', '-', '*', '/', '(', '^'].includes(lastChar)) {
+                currentInput += '0.'; updateScreenDisplayContent(); return;
+            }
+            
+            if (['+', '-', '*', '/', '^'].includes(action) && ['+', '-', '*', '/', '^'].includes(lastChar)) {
+                currentInput = currentInput.slice(0, -1) + action; updateScreenDisplayContent(); return;
+            }
+            if (['+', '-', '*', '/', '^'].includes(action) && lastChar === '.') {
+                currentInput = currentInput.slice(0, -1);
+            }
+
+            const basicOps = ['+', '*', '/', '%', '^'];
+
+            if (action === '.') {
+                let parts = currentInput.split(/[+\-*/%^()]/);
+                let currentPart = parts[parts.length - 1];
+                if (currentPart.includes('.')) return; 
+            }
+
+            if (currentInput === "0" && !basicOps.includes(action) && action !== '.' && action !== '-') {
+                currentInput = action;
+            } else {
+                currentInput += action;
+            }
+
+            updateScreenDisplayContent();
+            RichmondLivePreview();
+        }
+
+        function executeHapticVibration() {
+            if (isVibrationEnabled && navigator.vibrate) navigator.vibrate(25);
+        }
+
+        function adjustFontSizeRoutine() {
+            let len = calcDisplay.innerText.length;
+            if (len > 36) calcDisplay.style.fontSize = "18px";
+            else if (len > 24) calcDisplay.style.fontSize = "22px";
+            else if (len > 16) calcDisplay.style.fontSize = "28px";
+            else if (len > 10) calcDisplay.style.fontSize = "34px";
+            else calcDisplay.style.fontSize = "44px";
+        }
+
+        function toggleAdvancedPanel() {
+            advancedPanel.classList.toggle('open');
+            advToggleBtn.innerText = advancedPanel.classList.contains('open') ? "INV ⬇" : "INV ⌃";
+        }
+
+        function compileExpressionSafe(inputStr) {
+            let expr = inputStr.replace(/×/g, '*').replace(/÷/g, '/');
+            
+            const trailingCheck = expr.slice(-1);
+            if (['+', '-', '*', '/'].includes(trailingCheck)) {
+                let matchNum = expr.match(/([0-9.]+)(?=[+\-*/][^+\-*/]*$)/);
+                let fallback = matchNum ? matchNum[1] : "0";
+                expr += fallback;
+            }
+
+            expr = expr.replace(/([0-9.]+)\%([0-9.]+)/g, "($1*($2/100))");
+            expr = expr.replace(/([0-9.]+)\%/g, "($1/100)");
+
+            let openCount = (expr.match(/\(/g) || []).length;
+            let closeCount = (expr.match(/\)/g) || []).length;
+            while (openCount > closeCount) { expr += ')'; closeCount++; }
+
+            expr = expr.replace(/sin\(([^)]*)\)/g, (m, val) => { 
+                if(!val) return "0"; 
+                let deg = parseFloat(val) % 360;
+                if(deg === 180 || deg === 360 || deg === 0) return "0";
+                return Math.sin(parseFloat(val) * Math.PI / 180); 
+            });
+            
+            expr = expr.replace(/cos\(([^)]*)\)/g, (m, val) => { 
+                if(!val) return "1"; 
+                let deg = Math.abs(parseFloat(val)) % 360;
+                if(deg === 90 || deg === 270) return "0"; 
+                return Math.cos(parseFloat(val) * Math.PI / 180); 
+            });
+            
+            expr = expr.replace(/tan\(([^)]*)\)/g, (m, val) => { 
+                if(!val) return "0"; 
+                let deg = Math.abs(parseFloat(val)) % 180;
+                if(deg === 45) return "1"; 
+                if(deg === 90) return "Infinity"; 
+                return Math.tan(parseFloat(val) * Math.PI / 180); 
+            });
+            
+            expr = expr.replace(/log\(([^)]*)\)/g, (m, val) => { 
+                if(!val) return "0"; 
+                if(parseFloat(val) < 0) return "NaN";
+                if(parseFloat(val) === 0) return "-Infinity"; 
+                return Math.log10(parseFloat(val)); 
+            });
+            
+            expr = expr.replace(/ln\(([^)]*)\)/g, (m, val) => { 
+                if(!val) return "0"; 
+                if(parseFloat(val) < 0) return "NaN";
+                if(parseFloat(val) === 0) return "-Infinity";
+                return Math.log(parseFloat(val)); 
+            });
+            
+            expr = expr.replace(/sqrt\(([^)]*)\)/g, (m, val) => { 
+                if(!val) return "0"; 
+                if(parseFloat(val) < 0) return "NaN"; 
+                return Math.sqrt(parseFloat(val)); 
+            });
+
+            while (expr.includes('^')) {
+                expr = expr.replace(/([0-9.]+)\^([0-9.]+)/g, (m, b, e) => {
+                    if(parseFloat(b) === 0 && parseFloat(e) === 0) return "NaN"; 
+                    return Math.pow(parseFloat(b), parseFloat(e));
+                });
+            }
+            return expr;
+        }
+
+        function RichmondLivePreview() {
+            if (!currentInput) { previewDisplay.innerText = ""; return; }
+            const filters = /[+\-*/%^]/.test(currentInput) || currentInput.includes('(');
+            if (!filters) { previewDisplay.innerText = ""; return; }
+
+            if (/\/0(?![.0-9])/.test(currentInput.replace(/÷/g, '/'))) {
+                previewDisplay.innerText = ""; return;
+            }
+
+            try {
+                let parsedString = compileExpressionSafe(currentInput);
+                let evaluatedVal = eval(parsedString);
+                if (evaluatedVal !== undefined && !isNaN(evaluatedVal) && isFinite(evaluatedVal)) {
+                    if (Math.abs(evaluatedVal) > 1e15 || (Math.abs(evaluatedVal) < 1e-6 && evaluatedVal !== 0)) {
+                        evaluatedVal = evaluatedVal.toExponential(4);
+                    } else if (String(evaluatedVal).includes('.') && String(evaluatedVal).split('.')[1].length > 4) {
+                        evaluatedVal = Number(evaluatedVal.toFixed(4));
+                    }
+                    previewDisplay.innerText = evaluatedVal;
+                } else { previewDisplay.innerText = ""; }
+            } catch(e) { previewDisplay.innerText = ""; }
+        }
+
+        function calculate() {
+            if (!currentInput) return;
+            let rawInput = currentInput;
+            const checkHasOp = /[+\-*/%^]/.test(rawInput) || rawInput.includes('(') || rawInput.includes('3.14159');
+
+            if (/\/0(?![.0-9])/.test(rawInput.replace(/÷/g, '/'))) {
+                queryDisplay.innerText = rawInput + " ="; previewDisplay.innerText = "";
+                calcDisplay.innerText = "Can't divide by zero"; currentInput = "0"; isEvaluated = true;
+                adjustFontSizeRoutine(); return;
+            }
+
+            if (!checkHasOp) {
+                queryDisplay.innerText = rawInput + " ="; previewDisplay.innerText = "";
+                let cleanedNum = Number(rawInput).toString();
+                if (rawInput.includes('.')) cleanedNum = rawInput;
+                calcDisplay.innerText = cleanedNum; currentInput = cleanedNum; isEvaluated = true;
+                adjustFontSizeRoutine(); return;
+            }
+
+            try {
+                queryDisplay.innerText = rawInput + " ="; previewDisplay.innerText = "";
+                let finalCompiledString = compileExpressionSafe(rawInput);
+                let result = eval(finalCompiledString);
+
+                if (isNaN(result)) {
+                    if (rawInput.includes('sqrt')) calcDisplay.innerText = "Keep it real";
+                    else calcDisplay.innerText = "Result is undefined";
+                    currentInput = "0"; isEvaluated = true; adjustFontSizeRoutine(); return;
+                }
+
+                if (!isFinite(result)) {
+                    calcDisplay.innerText = result > 0 ? "Infinity" : "-Infinity"; 
+                    currentInput = "0"; isEvaluated = true; adjustFontSizeRoutine(); return;
+                }
+
+                if (Math.abs(result) > 1e15 || (Math.abs(result) < 1e-6 && result !== 0)) {
+                    result = result.toExponential(6);
+                } else if (String(result).includes('.') && String(result).split('.')[1].length > 6) {
+                    result = Number(result.toFixed(6));
+                }
+
+                calcDisplay.innerText = result;
+                saveHistory(rawInput, result);
+                currentInput = String(result);
+                isEvaluated = true;
+            } catch (e) {
+                calcDisplay.innerText = "Error"; currentInput = ""; isEvaluated = true;
+            }
+            adjustFontSizeRoutine();
+        }
+
+        function saveHistory(q, a) {
+            history.unshift({q: q, a: a});
+            if (historyLimit > 0 && history.length > historyLimit) { history = history.slice(0, historyLimit); }
+            else if (history.length > 50 && historyLimit === 0) { history.pop(); }
+            localStorage.setItem('calc_history', JSON.stringify(history));
+            renderHistory();
+        }
+
+        function renderHistory() {
+            if (history.length === 0) { historyItemsContainer.innerHTML = '<div style="text-align:center; color:#888; margin-top:30px;">No History</div>'; return; }
+            historyItemsContainer.innerHTML = history.map((item, index) => `
+                <div class="history-item" id="item-${index}">
+                    <div class="history-q">${item.q}</div><div class="history-a">${item.a}</div>
+                </div>
+            `).join('');
+
+            history.forEach((item, index) => {
+                let element = document.getElementById(`item-${index}`);
+                let startX = 0;
+                element.addEventListener('touchstart', e => { startX = e.changedTouches[0].screenX; }, { passive: true });
+                element.addEventListener('touchmove', e => {
+                    let diffX = e.changedTouches[0].screenX - startX;
+                    if (diffX > 0) { element.style.transform = `translateX(${diffX}px)`; element.style.opacity = `${1 - (diffX / 250)}`; }
+                }, { passive: true });
+                element.addEventListener('touchend', e => {
+                    if (e.changedTouches[0].screenX - startX > 110) {
+                        element.style.transform = 'translateX(100%)'; element.style.opacity = '0';
+                        setTimeout(() => { history.splice(index, 1); localStorage.setItem('calc_history', JSON.stringify(history)); renderHistory(); }, 150);
+                    } else { element.style.transform = 'translateX(0)'; element.style.opacity = '1'; }
+                }, { passive: true });
+            });
+        }
+
+        function openSettings() {
+            document.getElementById('themeSelect').value = selectedTheme;
+            document.getElementById('vibrateSelect').value = isVibrationEnabled ? 'on' : 'off';
+            document.getElementById('historyLimitInput').value = historyLimit > 0 ? historyLimit : '';
+            settingsModal.classList.add('open');
+        }
+        function closeSettings() { settingsModal.classList.remove('open'); }
+        function changeTheme() { selectedTheme = document.getElementById('themeSelect').value; localStorage.setItem('cfg_theme', selectedTheme); applyThemeRoutine(); }
+        
+        function applyThemeRoutine() {
+            document.body.classList.remove('dark-mode');
+            if (selectedTheme === 'dark') document.body.classList.add('dark-mode');
+            else if (selectedTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches) document.body.classList.add('dark-mode');
+        }
+
+        function toggleVibration() { const status = document.getElementById('vibrateSelect').value; isVibrationEnabled = (status === 'on'); localStorage.setItem('cfg_vibrate', status); }
+        function changeHistoryLimit() { const val = document.getElementById('historyLimitInput').value; historyLimit = val ? parseInt(val) : 0; localStorage.setItem('cfg_hist_limit', historyLimit); }
+
+        let touchstartY = 0; let touchendY = 0;
+        document.getElementById('swipeZone').addEventListener('touchstart', e => { touchstartY = e.changedTouches[0].screenY; }, { passive: true });
+        document.getElementById('swipeZone').addEventListener('touchend', e => { if (e.changedTouches[0].screenY - touchstartY > 65) historyDrawer.classList.add('open'); }, { passive: true });
+        historyItemsContainer.addEventListener('touchstart', e => { touchstartY = e.changedTouches[0].screenY; }, { passive: true });
+        historyItemsContainer.addEventListener('touchend', e => { if (touchstartY - e.changedTouches[0].screenY > 65) historyDrawer.classList.remove('open'); }, { passive: true });
+
+        document.getElementById('viewHistoryBtn').addEventListener('click', () => historyDrawer.classList.add('open'));
+        document.getElementById('closeDrawer').addEventListener('click', () => historyDrawer.classList.remove('open'));
+        document.getElementById('clearHistory').addEventListener('click', () => { history = []; localStorage.removeItem('calc_history'); renderHistory(); });
+
+        // MOUSE AND KEYBOARD HARDWARE SUPPORT FOR COMPUTERS
+        window.addEventListener('keydown', (e) => {
+            let key = e.key;
+            if (!isNaN(key)) btnPress(key);
+            if (key === 'Backspace') btnPress('CE');
+            if (key === 'Escape') btnPress('AC');
+            if (key === 'Enter' || key === '=') btnPress('=');
+            if (['+', '-', '*', '/'].includes(key)) btnPress(key);
+        });
+
+        applyThemeRoutine();
+        renderHistory();
+    </script>
+</body>
+</html>
